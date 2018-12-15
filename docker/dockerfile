@@ -1,0 +1,39 @@
+# You can pull this image from https://cloud.docker.com/u/msaffarm/repository/docker/msaffarm/rasa_nlu
+
+ARG BASE_IMAGE=jupyter/scipy-notebook
+FROM $BASE_IMAGE
+
+LABEL maintainer="Mansour Saffar M., msaffarmehrjardy@gmail.com"
+
+USER root
+
+# install java (for stanford CoreNLP)
+RUN apt-get update -q && \
+    apt-get install -y -q --no-install-recommends apt-utils && \
+    apt-get upgrade -y -q && \
+    apt-get install -y -q software-properties-common && \
+    add-apt-repository ppa:webupd8team/java -y && \
+    apt-get update -q && \
+    echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections && \
+    apt-get install -y -q oracle-java8-installer && \
+    apt-get install -q oracle-java8-set-default && \
+    apt-get clean
+
+USER $NB_UID
+
+# install some of the NLP libraries
+RUN conda install --quiet --yes \
+    'nltk=3.3*' \
+    'gensim=3.4*' \
+    'spacy=2*' && \
+    pip install rasa_nlu sentencepiece
+
+# download dataset for the NLP libraries
+RUN python -m spacy download en_core_web_lg && \
+    python -m spacy download en_vectors_web_lg && \
+    python -c "import nltk; nltk.download('popular', halt_on_error=False)"
+    
+# rasa nlu server port
+EXPOSE 5000
+
+USER $NB_UID
